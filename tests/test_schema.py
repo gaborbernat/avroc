@@ -2,34 +2,42 @@ import json
 
 import pytest
 
-from avroc.schema import parse
+from avroc import Schema
 
 
-def test_parse_schema_ok():
-    json_schema_raw = {
-        "name": "Data",
+@pytest.fixture()
+def person_schema_raw():
+    return {
         "type": "record",
+        "name": "Person",
         "fields": [
-            {
-                "name": "sources",
-                "type": {
-                    "type": "array",
-                    "items": [
-                        {"name": "Url", "type": "record", "fields": [{"name": "url", "type": "string"}]},
-                        {"name": "Source", "type": "record", "fields": [{"name": "data", "type": "string"}]},
-                    ],
-                },
-            },
+            {"name": "ID", "type": "long"},
+            {"name": "First", "type": "string"},
+            {"name": "Last", "type": "string"},
+            {"name": "Phone", "type": "string"},
+            {"name": "Age", "type": "int"},
         ],
     }
-    parse(json.dumps(json_schema_raw))
+
+
+@pytest.fixture()
+def person_schema(person_schema_raw):
+    return json.dumps(person_schema_raw)
+
+
+def test_parse_schema_ok(person_schema):
+    assert Schema(person_schema)
+
+
+def test_parse_schema_raw_ok(person_schema_raw):
+    assert Schema.from_py_object(person_schema_raw)
 
 
 def test_parse_schema_bad_json():
     with pytest.raises(ValueError, match="Error parsing JSON: string or '}' expected near end of file"):
-        parse("{")
+        Schema("{")
 
 
 def test_parse_schema_bad_avro():
     with pytest.raises(ValueError, match='Unknown Avro "type": magic'):
-        parse(json.dumps({"name": "Data", "type": "magic"}))
+        Schema.from_py_object({"name": "Data", "type": "magic"})
